@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
+import { HashRouter, Navigate, Route, Routes } from 'react-router-dom'
 import AppLayout from './components/Layout'
 import AudienceListPage from './pages/AudienceList'
 import AudienceCreatePage from './pages/AudienceCreate'
@@ -7,7 +7,7 @@ import OperatingActivityCreatePage from './pages/OperatingActivityCreate'
 
 export default function App() {
   return (
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <HashRouter>
       <Routes>
         <Route path="/" element={<AppLayout />}>
           <Route index element={<Navigate to="/audiences" replace />} />
@@ -20,6 +20,6 @@ export default function App() {
           />
         </Route>
       </Routes>
-    </BrowserRouter>
+    </HashRouter>
   )
 }
