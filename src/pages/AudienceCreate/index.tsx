@@ -2,6 +2,7 @@ import { useState } from 'react'
 import {
   Button,
   Card,
+  DatePicker,
   Divider,
   Form,
   Input,
@@ -9,7 +10,6 @@ import {
   Radio,
   Select,
   Space,
-  Tag,
   Typography,
   Upload,
 } from 'antd'
@@ -21,6 +21,7 @@ import {
 } from '@ant-design/icons'
 import { useNavigate } from 'react-router-dom'
 import type { UploadFile } from 'antd'
+import dayjs from 'dayjs'
 import { DYNAMIC_TAG_OPTIONS } from '../../constants/audience'
 import type { AudienceType } from '../../types/audience'
 import { createAudience } from '../../utils/audienceStorage'
@@ -32,6 +33,7 @@ import {
 const { TextArea } = Input
 const { Title, Text } = Typography
 const { Dragger } = Upload
+const { RangePicker } = DatePicker
 
 export default function AudienceCreatePage() {
   const navigate = useNavigate()
@@ -91,6 +93,9 @@ export default function AudienceCreatePage() {
               }
             : undefined,
         marketingEvents: [],
+        validFrom: values.validPeriod[0].format('YYYY-MM-DD'),
+        validTo: values.validPeriod[1].format('YYYY-MM-DD'),
+        excelFileName: audienceType === 'static' ? fileList[0]?.name : undefined,
       })
 
       message.success(`人群「${audience.name}」创建成功`)
@@ -141,6 +146,15 @@ export default function AudienceCreatePage() {
             <TextArea rows={3} placeholder="请输入人群描述" maxLength={200} showCount />
           </Form.Item>
 
+          <Form.Item
+            name="validPeriod"
+            label="人群有效期"
+            rules={[{ required: true, message: '请选择人群有效期' }]}
+            initialValue={[dayjs(), dayjs().add(1, 'year')]}
+          >
+            <RangePicker style={{ width: '100%' }} />
+          </Form.Item>
+
           <Form.Item label="人群类型" required>
             <Radio.Group
               value={audienceType}
@@ -173,24 +187,9 @@ export default function AudienceCreatePage() {
               </p>
               <p className="ant-upload-text">点击或拖拽 Excel 文件到此区域上传</p>
               <p className="ant-upload-hint">
-                支持 .xlsx / .xls / .csv 格式，第一列为用户ID
+                支持 .xlsx / .xls / .csv 格式，第一列为 user_id。上传后只展示文件，不展示用户明细。
               </p>
             </Dragger>
-            {userIds.length > 0 && (
-              <div style={{ marginTop: 12 }}>
-                <Text type="secondary">
-                  已导入 <Text strong>{userIds.length}</Text> 个用户ID
-                </Text>
-                <div style={{ marginTop: 8 }}>
-                  {userIds.slice(0, 5).map((id) => (
-                    <Tag key={id}>{id}</Tag>
-                  ))}
-                  {userIds.length > 5 && (
-                    <Tag>+{userIds.length - 5} 更多</Tag>
-                  )}
-                </div>
-              </div>
-            )}
           </Card>
         ) : (
           <Card title="圈选条件" size="small" style={{ marginBottom: 16 }}>

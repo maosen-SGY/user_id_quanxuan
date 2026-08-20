@@ -1,4 +1,5 @@
 import type {
+  AudienceCreateStatus,
   AudienceType,
   MarketingEventType,
   NotifyFrequency,
@@ -9,6 +10,11 @@ import type {
 export const AUDIENCE_TYPE_LABELS: Record<AudienceType, string> = {
   static: '静态',
   dynamic: '动态',
+}
+
+export const AUDIENCE_CREATE_STATUS_LABELS: Record<AudienceCreateStatus, string> = {
+  creating: '创建中',
+  created: '创建完成',
 }
 
 export const MARKETING_EVENT_LABELS: Record<MarketingEventType, string> = {

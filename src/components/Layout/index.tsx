@@ -68,7 +68,15 @@ export default function AppLayout() {
             人群圈选管理
           </Title>
         </Header>
-        <Content style={{ margin: 24, background: '#fff', borderRadius: 8 }}>
+        <Content
+          style={{
+            margin: 24,
+            background: '#fff',
+            borderRadius: 8,
+            overflow: 'auto',
+            minHeight: 'calc(100vh - 112px)',
+          }}
+        >
           <Outlet />
         </Content>
       </Layout>

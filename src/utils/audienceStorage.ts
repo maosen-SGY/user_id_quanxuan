@@ -1,12 +1,52 @@
 import type {
   Audience,
+  AudienceCreateStatus,
   AudienceFilter,
   NotifyFrequency,
   PopupScene,
 } from '../types/audience'
 
 const STORAGE_KEY = 'audience_segments'
-const DATA_VERSION = 'v8'
+const DATA_VERSION = 'v10'
+
+const CREATING_AUDIENCE_IDS = new Set(['AUD005', 'AUD007', 'AUD010'])
+const MOCK_COVERAGE: Record<string, number> = {
+  AUD001: 12840,
+  AUD002: 5,
+  AUD003: 3620,
+  AUD004: 9150,
+  AUD005: 6740,
+  AUD006: 6,
+  AUD007: 4820,
+  AUD008: 15680,
+  AUD009: 8,
+  AUD010: 2390,
+}
+
+function toDateOnly(datetime: string): string {
+  return datetime.slice(0, 10)
+}
+
+function plusOneYear(datetime: string): string {
+  const date = toDateOnly(datetime)
+  const [year, month, day] = date.split('-')
+  return `${Number(year) + 1}-${month}-${day}`
+}
+
+function resolveCreateStatus(audience: Audience): AudienceCreateStatus {
+  if (audience.createStatus) return audience.createStatus
+  return CREATING_AUDIENCE_IDS.has(audience.id) ? 'creating' : 'created'
+}
+
+function resolveEstimatedCoverage(audience: Audience): number | undefined {
+  if (typeof audience.estimatedCoverage === 'number') {
+    return audience.estimatedCoverage
+  }
+  if (audience.type === 'static') {
+    return audience.userIds?.length
+  }
+  return MOCK_COVERAGE[audience.id]
+}
 
 const FREQUENCY_CYCLE: NotifyFrequency[] = ['daily', 'weekly', 'biweekly', 'monthly']
 const POPUP_SCENES: PopupScene[] = [
@@ -66,6 +106,13 @@ function normalizeDynamicTags(
 function normalizeAudiences(audiences: Audience[]): Audience[] {
   return audiences.map((audience, audienceIndex) => ({
     ...audience,
+    createStatus: resolveCreateStatus(audience),
+    estimatedCoverage: resolveEstimatedCoverage(audience),
+    validFrom: audience.validFrom || toDateOnly(audience.createdAt),
+    validTo: audience.validTo || plusOneYear(audience.createdAt),
+    excelFileName:
+      audience.excelFileName ||
+      (audience.type === 'static' ? `${audience.name}.xlsx` : undefined),
     dynamicTags: normalizeDynamicTags(audience.dynamicTags),
     marketingEvents: [
       {
@@ -375,14 +422,42 @@ export function getAudienceById(id: string): Audience | undefined {
 }
 
 export function createAudience(
-  data: Omit<Audience, 'id' | 'createdAt' | 'status'>,
+  data: Omit<
+    Audience,
+    | 'id'
+    | 'createdAt'
+    | 'status'
+    | 'createStatus'
+    | 'estimatedCoverage'
+    | 'validFrom'
+    | 'validTo'
+    | 'excelFileName'
+  > &
+    Partial<
+      Pick<
+        Audience,
+        | 'createStatus'
+        | 'estimatedCoverage'
+        | 'validFrom'
+        | 'validTo'
+        | 'excelFileName'
+      >
+    >,
 ): Audience {
   const audiences = loadAudiences()
+  const createdAt = new Date().toISOString().replace('T', ' ').slice(0, 19)
   const newAudience: Audience = {
     ...data,
     id: `AUD${String(audiences.length + 1).padStart(3, '0')}`,
     status: 'active',
-    createdAt: new Date().toISOString().replace('T', ' ').slice(0, 19),
+    createdAt,
+    createStatus:
+      data.createStatus ?? (data.type === 'static' ? 'created' : 'creating'),
+    estimatedCoverage:
+      data.estimatedCoverage ??
+      (data.type === 'static' ? data.userIds?.length : undefined),
+    validFrom: data.validFrom ?? toDateOnly(createdAt),
+    validTo: data.validTo ?? plusOneYear(createdAt),
   }
   audiences.unshift(newAudience)
   saveAudiences(audiences)
@@ -391,8 +466,15 @@ export function createAudience(
 
 export function updateAudienceConfig(
   id: string,
-  marketingEvents: Audience['marketingEvents'],
-  dynamicTags?: Audience['dynamicTags'],
+  patch: {
+    marketingEvents?: Audience['marketingEvents']
+    dynamicTags?: Audience['dynamicTags']
+    validFrom?: string
+    validTo?: string
+    userIds?: string[]
+    estimatedCoverage?: number
+    excelFileName?: string
+  },
 ): Audience | undefined {
   const audiences = loadAudiences()
   const index = audiences.findIndex((a) => a.id === id)
@@ -400,8 +482,7 @@ export function updateAudienceConfig(
 
   audiences[index] = {
     ...audiences[index],
-    marketingEvents,
-    ...(dynamicTags ? { dynamicTags } : {}),
+    ...patch,
   }
   saveAudiences(audiences)
   return audiences[index]
