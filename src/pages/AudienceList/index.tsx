@@ -16,7 +16,6 @@ import { useNavigate } from 'react-router-dom'
 import dayjs from 'dayjs'
 import type { ColumnsType } from 'antd/es/table'
 import {
-  AUDIENCE_CREATE_STATUS_LABELS,
   AUDIENCE_TYPE_LABELS,
 } from '../../constants/audience'
 import type { Audience, AudienceFilter } from '../../types/audience'
@@ -164,15 +163,6 @@ export default function AudienceListPage() {
       ),
     },
     {
-      title: '预计覆盖人数',
-      dataIndex: 'estimatedCoverage',
-      width: 150,
-      render: (_, record) =>
-        record.createStatus === 'creating'
-          ? '覆盖人数计算中'
-          : (record.estimatedCoverage ?? 0).toLocaleString('zh-CN'),
-    },
-    {
       title: '人群有效期',
       key: 'validPeriod',
       width: 200,
@@ -180,19 +170,6 @@ export default function AudienceListPage() {
         record.validFrom && record.validTo
           ? `${record.validFrom} ~ ${record.validTo}`
           : '-',
-    },
-    {
-      title: '人群创建状态',
-      dataIndex: 'createStatus',
-      width: 120,
-      render: (createStatus: Audience['createStatus']) => {
-        const status = createStatus ?? 'created'
-        return (
-          <Tag color={status === 'created' ? 'success' : 'processing'}>
-            {AUDIENCE_CREATE_STATUS_LABELS[status]}
-          </Tag>
-        )
-      },
     },
     {
       title: '创建人',
@@ -296,7 +273,7 @@ export default function AudienceListPage() {
         dataSource={data}
         rowKey="id"
         loading={loading}
-        scroll={{ x: 1680 }}
+        scroll={{ x: 1400 }}
         pagination={{
           current: currentPage,
           pageSize,
